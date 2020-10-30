@@ -58,20 +58,17 @@ boolean needMqttConnect = false;
 boolean needReset = false;
 unsigned long lastMqttConnectionAttempt = 0;
 
-bool airState = LOW;
+bool airState = HIGH;
 bool co2State = LOW;
 bool pumpState = LOW;
 
 char mqttStatusTopic[STRING_LEN];
-char mqttRelay1Topic[STRING_LEN];
-char mqttRelay2Topic[STRING_LEN];
+char mqttAirTopic[STRING_LEN];
+char mqttCo2Topic[STRING_LEN];
 char mqttPumpTopic[STRING_LEN];
 char mqttDeviceWildcardTopic[STRING_LEN];
 
 
-/**
- * Handle web requests to "/" path.
- */
 void handleRoot()
 {
   // -- Let IotWebConf test and handle captive portal requests.
@@ -144,7 +141,148 @@ boolean connectMqtt() {
   Serial.println("Connected!");
 
   mqttClient.subscribe(mqttDeviceWildcardTopic);
-  mqttClient.publish(mqttStatusTopic, "online", true, 1);
+  
+    //// send Homie messages
+  String buf;
+  char mqttHomieTopic[STRING_LEN];
+
+  // /homie/deviceid/$homie
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "/$homie";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "4", true, 1);
+  // /homie/deviceid/$name
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "/$name";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "AquaSlave-110", true, 1);
+  // /homie/deviceid/$nodes
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "/$nodes";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "controller", true, 1);
+  // /homie/deviceid/$implementation
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "/$implementation";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "ESP8266", true, 1);
+  // /homie/deviceid/$state
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "/$state";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "init", true, 1);
+
+  // /homie/deviceid/controller/$name
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/$name";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "AquaController", true, 1);
+    // /homie/deviceid/controller/$properties 
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/$properties";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "air, co2, pump", true, 1);
+
+  // /homie/deviceid/controller/air/$name
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/air/$name";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "Air", true, 1);
+  // /homie/deviceid/controller/air/$unit
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/air/$unit";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "#", true, 1);
+  // /homie/deviceid/controller/air/$datatype
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/air/$datatype";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "integer", true, 1);
+   // /homie/deviceid/controller/air/$settable
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/air/$settable";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "true", true, 1);
+
+  // /homie/deviceid/controller/co2/$name
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/co2/$name";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "co2", true, 1);
+  // /homie/deviceid/controller/co2/$unit
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/co2/$unit";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "#", true, 1);
+  // /homie/deviceid/controller/co2/$datatype
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/co2/$datatype";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "integer", true, 1);
+   // /homie/deviceid/controller/co2/$settable
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/co2/$settable";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "true", true, 1);
+
+  // /homie/deviceid/controller/pump/$name
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/pump/$name";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "pump", true, 1);
+  // /homie/deviceid/controller/pump/$unit
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/pump/$unit";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "#", true, 1);
+  // /homie/deviceid/controller/pump/$datatype
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/pump/$datatype";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "integer", true, 1);
+   // /homie/deviceid/controller/pump/$settable
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "controller/pump/$settable";
+  buf.toCharArray(mqttHomieTopic, STRING_LEN);
+  mqttClient.publish(mqttHomieTopic, "true", true, 1);
+
+  /*
+    homie / device123 / mythermostat / $name → My thermostat
+  homie / device123 / mythermostat / $properties → temperature
+
+  homie / device123 / mythermostat / temperature → 22 
+  homie / device123 / mythermostat / temperature / $name → Temperature
+  homie / device123 / mythermostat / temperature / $unit → °C
+  homie / device123 / mythermostat / temperature / $datatype → integer
+  homie / device123 / mythermostat / temperature / $settable → true
+  */
+
+/*
+  
+  char mqttRelay2Topic[STRING_LEN];
+  char mqttPumpTopic[STRING_LEN];       
+*/
+  
+  //mqttClient.publish(mqttStatusTopic, "online", false, 1);
   //mqttClient.publish(mqttActionTopic, airState == HIGH ? "ON" : "OFF", true, 1);
 
 
@@ -155,36 +293,22 @@ void mqttMessageReceived(String &topic, String &payload)
 {
   Serial.println("Incoming: " + topic + " - " + payload);
 
-  if (topic.endsWith("air")) {
+  if (topic.endsWith("air/set")) {
+    
     if (payload.toInt() == 1){
       airState = HIGH;
       Serial.println("air high");
-      digitalWrite(AIR_PIN, HIGH);
     }
     else {
       airState = LOW;
       Serial.println("air low");
-      digitalWrite(AIR_PIN, LOW);
     }
   }
-  else if (topic.endsWith("co2")) {
+  else if (topic.endsWith("co2/set")) {
     Serial.println("co2");
-    if (payload.toInt() == 1){
-      co2State = HIGH;
-      Serial.println("air high");
-      digitalWrite(CO2_PIN, HIGH);
-    }
-    else {
-      co2State = LOW;
-      Serial.println("air low");
-      digitalWrite(CO2_PIN, LOW);
-    }
   }
-   else if (topic.endsWith("pump")) {
+   else if (topic.endsWith("pump/set")) {
     Serial.println("pump");
-    digitalWrite(PUMP_PIN, HIGH);
-    delay( payload.toFloat() * atof(pumpCalibrationValue) * 1000);
-    digitalWrite(PUMP_PIN, LOW);
   }
 }
 
@@ -221,6 +345,15 @@ void setup()
   // -- Prepare dynamic topic names
   String buf;
 
+  /* 
+  homie/super-car/$homie → "2.1.0"
+  homie/super-car/$name → "Super car"
+  homie/super-car/$nodes → "wheels,engine,lights[]"
+  homie/super-car/$implementation → "esp8266"
+  homie/super-car/$state → "ready"
+  */
+
+  // /homie/deviceid/status
   buf = String(MQTT_TOPIC_PREFIX);
   buf += iotWebConf.getThingName();
   buf += "/status";
@@ -232,8 +365,12 @@ void setup()
   buf += "/#";
   buf.toCharArray(mqttDeviceWildcardTopic, STRING_LEN);
 
+
   mqttClient.begin(mqttServerValue, net);
   mqttClient.onMessage(mqttMessageReceived);
+
+
+
   
   Serial.println("Ready.");
 }
@@ -263,13 +400,6 @@ void loop()
     iotWebConf.delay(1000);
     ESP.restart();
   }
-
-  if (airState == HIGH)
-  {
-    iotWebConf.blink(2000, 90);
-  }
-  else
-  {
-    iotWebConf.stopCustomBlink();
-  }
 }
+
+/**/

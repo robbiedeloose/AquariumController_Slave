@@ -265,27 +265,6 @@ boolean connectMqtt() {
   buf.toCharArray(mqttHomieTopic, STRING_LEN);
   mqttClient.publish(mqttHomieTopic, "true", true, 1);
 
-  /*
-    homie / device123 / mythermostat / $name → My thermostat
-  homie / device123 / mythermostat / $properties → temperature
-
-  homie / device123 / mythermostat / temperature → 22 
-  homie / device123 / mythermostat / temperature / $name → Temperature
-  homie / device123 / mythermostat / temperature / $unit → °C
-  homie / device123 / mythermostat / temperature / $datatype → integer
-  homie / device123 / mythermostat / temperature / $settable → true
-  */
-
-/*
-  
-  char mqttRelay2Topic[STRING_LEN];
-  char mqttPumpTopic[STRING_LEN];       
-*/
-  
-  //mqttClient.publish(mqttStatusTopic, "online", false, 1);
-  //mqttClient.publish(mqttActionTopic, airState == HIGH ? "ON" : "OFF", true, 1);
-
-
   return true;
 }
 

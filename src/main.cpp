@@ -2,6 +2,21 @@
 #include <MQTT.h>
 #include <IotWebConf.h>
 
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+ #include <avr/power.h> // Required for 16 MHz Adafruit Trinket
+#endif
+
+
+
+// Which pin on the Arduino is connected to the NeoPixels?
+#define PIN        D1 // On Trinket or Gemma, suggest changing this to 1
+
+// How many NeoPixels are attached to the Arduino?
+#define NUMPIXELS 1 // Popular NeoPixel ring size
+
+Adafruit_NeoPixel pixels(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
 // -- Initial name of the Thing. Used e.g. as SSID of the own Access Point.
 const char thingName[] = "AquaControllerSlave";
 
@@ -265,6 +280,8 @@ boolean connectMqtt() {
   buf.toCharArray(mqttHomieTopic, STRING_LEN);
   mqttClient.publish(mqttHomieTopic, "true", true, 1);
 
+
+  mqttClient.publish()
   return true;
 }
 
@@ -276,18 +293,71 @@ void mqttMessageReceived(String &topic, String &payload)
     
     if (payload.toInt() == 1){
       airState = HIGH;
+      co2State = LOW;
       Serial.println("air high");
+      digitalWrite(AIR_PIN, LOW);
+      Serial.println("co2 low because of air on");
+      digitalWrite(CO2_PIN, HIGH);
+      pixels.setPixelColor(0, pixels.Color(0, 0, 100));
+      pixels.show();   
     }
     else {
       airState = LOW;
       Serial.println("air low");
+      digitalWrite(AIR_PIN, HIGH);
+      pixels.clear();
+      pixels.show();
     }
   }
   else if (topic.endsWith("co2/set")) {
-    Serial.println("co2");
+    if (payload.toInt() == 1){
+      co2State = HIGH;
+      airState = LOW;
+      Serial.println("co2 high");
+      digitalWrite(CO2_PIN, LOW);
+      Serial.println("air low because of co2 on");
+      digitalWrite(AIR_PIN, HIGH);
+      pixels.setPixelColor(0, pixels.Color(0, 100, 0));
+      pixels.show();  
+    }
+    else {
+      co2State = LOW;
+      Serial.println("co2 low");
+      digitalWrite(CO2_PIN, HIGH);
+      pixels.clear();
+      pixels.show();
+    }
   }
    else if (topic.endsWith("pump/set")) {
-    Serial.println("pump");
+    Serial.print("pump ");
+
+    // pause air and CO2
+    Serial.println("Pause co2 or air");
+
+    digitalWrite(AIR_PIN, HIGH);
+    digitalWrite(CO2_PIN, HIGH);
+
+    digitalWrite(PUMP_PIN, HIGH);
+    pixels.setPixelColor(0, pixels.Color(100, 0, 0));
+    pixels.show();  
+    delay(payload.toInt() * atof(pumpCalibrationValue) * 1000);
+    digitalWrite(PUMP_PIN, LOW);
+    pixels.clear();
+    pixels.show();
+
+    // resume air of co2
+    if (airState == HIGH){
+      Serial.println("air high");
+      digitalWrite(AIR_PIN, LOW);
+      pixels.setPixelColor(0, pixels.Color(0, 0, 100));
+      pixels.show();  
+    }
+    if (co2State == HIGH) {
+      Serial.println("co2 high");
+      digitalWrite(CO2_PIN, LOW);
+      pixels.setPixelColor(0, pixels.Color(0, 100, 0));
+      pixels.show(); 
+    }
   }
 }
 
@@ -298,6 +368,11 @@ void setup()
   Serial.println("Starting up...");
 
   pinMode(AIR_PIN, OUTPUT);
+  pinMode(CO2_PIN, OUTPUT);
+  pinMode(PUMP_PIN, OUTPUT);
+
+  digitalWrite(AIR_PIN, HIGH);
+  digitalWrite(CO2_PIN, HIGH);
 
   iotWebConf.setStatusPin(STATUS_PIN);
   iotWebConf.setConfigPin(BUTTON_PIN);
@@ -348,7 +423,7 @@ void setup()
   mqttClient.begin(mqttServerValue, net);
   mqttClient.onMessage(mqttMessageReceived);
 
-
+    pixels.begin(); // INITIALIZE NeoPixel strip object (REQUIRED)
 
   
   Serial.println("Ready.");
@@ -356,6 +431,7 @@ void setup()
 
 void loop() 
 {
+
   // -- doLoop should be called as frequently as possible.
   iotWebConf.doLoop();
   mqttClient.loop();

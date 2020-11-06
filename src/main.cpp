@@ -72,6 +72,7 @@ IotWebConfParameter pumpCalibrationParam = IotWebConfParameter("Pump calibration
 boolean needMqttConnect = false;
 boolean needReset = false;
 unsigned long lastMqttConnectionAttempt = 0;
+boolean firstLoop = true;
 
 bool airState = HIGH;
 bool co2State = LOW;
@@ -82,6 +83,7 @@ char mqttAirTopic[STRING_LEN];
 char mqttCo2Topic[STRING_LEN];
 char mqttPumpTopic[STRING_LEN];
 char mqttDeviceWildcardTopic[STRING_LEN];
+char mqttLastWillTopic[STRING_LEN];
 
 
 void handleRoot()
@@ -280,8 +282,6 @@ boolean connectMqtt() {
   buf.toCharArray(mqttHomieTopic, STRING_LEN);
   mqttClient.publish(mqttHomieTopic, "true", true, 1);
 
-
-  mqttClient.publish()
   return true;
 }
 
@@ -333,10 +333,12 @@ void mqttMessageReceived(String &topic, String &payload)
 
     // pause air and CO2
     Serial.println("Pause co2 or air");
-
     digitalWrite(AIR_PIN, HIGH);
     digitalWrite(CO2_PIN, HIGH);
 
+    Serial.print("Pump ");
+    Serial.print(payload);
+    Serial.println("ml");
     digitalWrite(PUMP_PIN, HIGH);
     pixels.setPixelColor(0, pixels.Color(100, 0, 0));
     pixels.show();  
@@ -419,6 +421,12 @@ void setup()
   buf += "/#";
   buf.toCharArray(mqttDeviceWildcardTopic, STRING_LEN);
 
+   // LAst Will /homie/deviceid/$state
+  buf = String(MQTT_TOPIC_PREFIX);
+  buf += iotWebConf.getThingName();
+  buf += "/$state";
+  buf.toCharArray(mqttLastWillTopic, STRING_LEN);
+  mqttClient.setWill(mqttLastWillTopic, "lost", true, 1);
 
   mqttClient.begin(mqttServerValue, net);
   mqttClient.onMessage(mqttMessageReceived);
@@ -455,6 +463,21 @@ void loop()
     iotWebConf.delay(1000);
     ESP.restart();
   }
+
+  if (firstLoop) {
+
+    String buf;
+    char mqttHomieTopic[STRING_LEN];
+    // /homie/deviceid/$state
+    buf = String(MQTT_TOPIC_PREFIX);
+    buf += iotWebConf.getThingName();
+    buf += "/$state";
+    buf.toCharArray(mqttHomieTopic, STRING_LEN);
+    mqttClient.publish(mqttHomieTopic, "ready", true, 1);
+      
+    firstLoop = false;
+  }
+
 }
 
 /**/
